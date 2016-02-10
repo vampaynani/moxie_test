@@ -7,6 +7,7 @@ class MoxieMovies {
 	private function __construct(){
 		add_action('init', array($this, 'create_moxie_movies_post_type'));
 		add_action('add_meta_boxes', array($this, 'add_moxie_movies_metaboxes'));
+		add_action('save_post', array($this, 'save_moxie_movie_metas'));
 	}
 
 	/**
@@ -41,39 +42,88 @@ class MoxieMovies {
 	* Set metaboxes to the "movies" post type.
 	*/
 	public function add_moxie_movies_metaboxes(){
-		add_meta_box('mx_movie_rating', 'Movie Rating', array($this, 'movie_rating_cb'), 'movies', 'side', 'default');
-		add_meta_box('mx_movie_year', 'Movie Year', array($this, 'movie_year_cb'), 'movies', 'side', 'default');
+		add_meta_box('mx_movie_rating', 'Movie Metadata', array($this, 'movie_metadata_cb'), 'movies', 'side', 'default');
 	}
 
 	/**
-	* Generates HTML for the Metabox Movie Rating
+	* Generates HTML for the Movie Metadata (Rating, Year)
 	*/
-	public function movie_rating_cb(){
+	public function movie_metadata_cb(){
 		global $post;
 		// Noncename needed to verify where the data originated
-	    echo '<input type="hidden" name="eventmeta_noncename" id="eventmeta_noncename" value="' .
+	    echo '<input type="hidden" name="eventmeta_moxmovie" id="eventmeta_moxmovie" value="' .
 	    wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
 	    // Get the rating data if its already been entered
 	    $rating = get_post_meta($post->ID, '_movie_rating', true);
-	    // Echo the select field
-	    echo '<select name="_movie_rating" value="' . $rating  . '" class="widefat">';
+	    // Echo the rating field
+	    echo '<div class="misc-pub-section"><label>Movie Rating</label>';
+	    echo '<select name="_movie_rating" class="widefat">';
 	    for($i = 0; $i <= 5; $i++){
-	    	echo '<option>'. $i .'</option>';
+	    	echo $i == $rating ? '<option selected>'. $i .'</option>' : '<option>'. $i .'</option>';
 	  	}
-	  	echo '</select>';
+	  	echo '</select></div>';
+	  	$year = get_post_meta($post->ID, '_movie_year', true);
+    	// Echo the year field
+    	echo '<div class="misc-pub-section"><label>Movie Year</label>';
+    	echo '<input type="number" name="_movie_year" value="' . $year  . '" class="widefat"/></div>';
 	}
 
 	/**
-	* Generates HTML for the Metabox Movie Year
-	*/
-	public function movie_year_cb(){
+	* Save metabox data from Moxie movie
+ 	*/
+	public function save_moxie_movie_metas(){
 		global $post;
-		// Noncename needed to verify where the data originated
-    echo '<input type="hidden" name="eventmeta_noncename" id="eventmeta_noncename" value="' .
-    wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
-    // Get the rating data if its already been entered
-    $year = get_post_meta($post->ID, '_movie_year', true);
-    // Echo the select field
-    echo '<input type="number" name="_movie_year" value="' . $year  . '" class="widefat"/>';
+		// verify this came from the our screen and with proper authorization,
+    // because save_post can be triggered at other times
+    if ( !wp_verify_nonce( $_POST['eventmeta_moxmovie'], plugin_basename(__FILE__) )) return $post->ID;
+    // Is the user allowed to edit the post or page?
+    if ( !current_user_can( 'edit_post', $post->ID )) return $post->ID;
+
+    // Add values of $events_meta as custom fields
+    $events_meta = array( '_movie_rating' => $_POST['_movie_rating'], '_movie_year' => $_POST['_movie_year']);
+    foreach ($events_meta as $key => $value) {
+    	if( $post->post_type == 'revision' ) return;
+      if(get_post_meta($post->ID, $key, FALSE)) {
+      	// If the custom field already has a value
+        update_post_meta($post->ID, $key, $value);
+      } else { 
+      	// If the custom field doesn't have a value
+        add_post_meta($post->ID, $key, $value);
+      }
+      if(!$value) delete_post_meta($post->ID, $key); // Delete if blank
+    }
+	}
+
+	/**
+	* Generates JSON data of "movies" post type
+	*/
+	public function show_json_data(){
+		// In case there's a clients callback, save it in a variable
+		$jsonp_callback = isset($_GET['callback']) ? $_GET['callback'] : null;
+		
+		// Get all posts from movies post type
+		$args = array(
+			'posts_per_page' => -1,
+			'orderby' => 'date',
+			'order' => 'DESC',
+			'post_type' => 'movies',
+			'post_status' => 'publish'
+		);
+		$posts_array = get_posts( $args );
+		
+		// Get all variables and set them on an associative array, then pass it to the $raw_json array
+		$raw_json = array();
+		foreach ($posts_array as $post) {
+			array_push($raw_json, array(
+				'title' => $post->post_title,
+				'poster_url' => wp_get_attachment_url( get_post_thumbnail_id($post->ID) ), 
+				'rating' => get_post_meta($post->ID, '_movie_rating', FALSE)[0],
+				'year' => get_post_meta($post->ID, '_movie_year', FALSE)[0],
+				'description' => $post->post_content
+			));
+		};
+		header("Content-type: application/json", false);
+		$json = json_encode( $raw_json );
+		print $jsonp_callback ? "$jsonp_callback($json)" : $json;
 	}
 }

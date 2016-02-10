@@ -7,7 +7,11 @@
  * Author URI: http://github.com/vampaynani
  */
 
+include_once('vendor/autoload.php');
 include_once('src/moxiemovies.class.php');
 include_once('src/urlhandler.class.php');
 
+$url_handler = URLHandler::get_instance();
 $mox_movies = MoxieMovies::get_instance();
+
+$url_handler->set_handler(array($mox_movies, 'show_json_data'));
