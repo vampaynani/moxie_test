@@ -4,7 +4,8 @@
   "description": "Moxie Test plugin for WordPress",
   "keywords": ["moxie","wordpress","plugin"],
   "require": {
-    "php": ">=5.4.0"
+    "php": ">=5.4.0",
+    "twig/twig": "1.18.0"
   },
   "authors": [
     {

@@ -6,3 +6,8 @@
  * Author: Wenceslao Negrete
  * Author URI: http://github.com/vampaynani
  */
+
+include_once('src/moxiemovies.class.php');
+include_once('src/urlhandler.class.php');
+
+$mox_movies = MoxieMovies::get_instance();
