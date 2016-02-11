@@ -2,7 +2,7 @@
 
 Download the plugin from https://github.com/vampaynani/moxie_test/releases/tag/1.0.0
 
-When the plugin is active, it does many things:
+When the user enables the plugin, it does many things:
 - Creates an endpoint on: **domain.com/movies.json**
 - Creates a new post type *movie* in the admin view
 - Creates a page called *Movies* and set it as frontpage.
