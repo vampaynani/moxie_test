@@ -1,13 +1,12 @@
 <?php
 class MoxieMovies {
 	private static $instance = false;
-	private static $loader = false;
-	private static $twig = false;
-
+	
 	private function __construct(){
 		add_action('init', array($this, 'create_moxie_movies_post_type'));
 		add_action('add_meta_boxes', array($this, 'add_moxie_movies_metaboxes'));
 		add_action('save_post', array($this, 'save_moxie_movie_metas'));
+		add_action('save_post', array($this, 'caching_api_call'));
 	}
 
 	/**
@@ -95,12 +94,42 @@ class MoxieMovies {
 	}
 
 	/**
-	* Generates JSON data of "movies" post type
+ 	* API Simple Caching
+ 	*/
+ 	public function caching_api_call(){
+ 		if ( wp_verify_nonce( $_POST['eventmeta_moxmovie'], plugin_basename(__FILE__) )){
+	 		$cache_file = dirname(__FILE__) . '/cache/api-cache.json';
+	 		
+	 		if( !file_exists($cache_file) ) die("Cache file is missing: $cache_file");
+
+	 		$json_results = $this->get_json_data();
+	 		if ( $json_results ){
+	    	file_put_contents($cache_file, $json_results);
+	    }else{
+	    	unlink($cache_file);
+	    }
+	 	}
+ 	}
+
+ 	/**
+	* Shows JSON Data previously cached of "movies" post type
 	*/
-	public function show_json_data(){
+	public function show_cached_json_data(){
+		$cache_file = dirname(__FILE__) . '/cache/api-cache.json';
+
 		// In case there's a clients callback, save it in a variable
 		$jsonp_callback = isset($_GET['callback']) ? $_GET['callback'] : null;
-		
+
+		//Shows a valid JSON content and in case there's a jsonp callback, resolve it
+		header("Content-type: application/json", false);
+		$json = file_get_contents($cache_file);
+		print $jsonp_callback ? "$jsonp_callback($json)" : $json;
+	}
+
+	/**
+	* Generates JSON data of "movies" post type
+	*/
+	private function get_json_data(){
 		// Get all posts from movies post type
 		$args = array(
 			'posts_per_page' => -1,
@@ -115,15 +144,14 @@ class MoxieMovies {
 		$raw_json = array();
 		foreach ($posts_array as $post) {
 			array_push($raw_json, array(
+				'id' => $post->ID,
 				'title' => $post->post_title,
 				'poster_url' => wp_get_attachment_url( get_post_thumbnail_id($post->ID) ), 
 				'rating' => get_post_meta($post->ID, '_movie_rating', FALSE)[0],
 				'year' => get_post_meta($post->ID, '_movie_year', FALSE)[0],
-				'description' => $post->post_content
+				'short_description' => $post->post_content
 			));
 		};
-		header("Content-type: application/json", false);
-		$json = json_encode( $raw_json );
-		print $jsonp_callback ? "$jsonp_callback($json)" : $json;
+		return $json = json_encode( $raw_json );
 	}
 }

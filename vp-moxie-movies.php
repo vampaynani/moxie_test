@@ -7,11 +7,12 @@
  * Author URI: http://github.com/vampaynani
  */
 
-include_once('vendor/autoload.php');
 include_once('src/moxiemovies.class.php');
+include_once('src/pagemanager.class.php');
 include_once('src/urlhandler.class.php');
 
-$url_handler = URLHandler::get_instance();
-$mox_movies = MoxieMovies::get_instance();
+$url_handler 	= URLHandler::get_instance();
+$page_manager = PageManager::get_instance();
+$mox_movies 	= MoxieMovies::get_instance();
 
-$url_handler->set_callback(array($mox_movies, 'show_json_data'));
+$url_handler->set_callback(array($mox_movies, 'show_cached_json_data'));
