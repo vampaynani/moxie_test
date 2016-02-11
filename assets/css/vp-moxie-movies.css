@@ -1,0 +1,42 @@
+#vp-moxie-movies{}
+#vp-moxie-movies-list{
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	justify-content: space-between;
+}
+#vp-moxie-movies-list li{
+	flex: 0 30%;
+	border: 1px solid #999;
+	display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  height: 350px;
+}
+#vp-moxie-movies-list li h1{
+	width: 100%;
+  font-size: 20px;
+  padding: 0 1em;
+  margin: 0;
+}
+#vp-moxie-movies-list li img{
+	padding: 0 1em;
+}
+#vp-moxie-movies-list li p{
+	width: 100%;
+	margin-bottom: 12px;
+	padding: 0 1em;
+}
+#vp-moxie-movies-list li .footer{
+	width: 100%;
+	display: flex;
+	justify-content: space-between;
+	padding: 0 1em;
+	background: #ddd;
+}
+#vp-moxie-movies-list li .footer i{
+	padding: 0 3px 0 0;
+}
